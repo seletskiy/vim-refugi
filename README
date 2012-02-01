@@ -1,0 +1,16 @@
+vim is awesome.
+git is awesome.
+fugitive is awesome.
+sshfs is awesome.
+
+But all these things together have so many awesomness,
+that put your network down.
+And put fugitive down.
+And put vim down.
+And put you down.
+
+And all of there is because of git through sshfs is slow as hell.
+And all of there is because fugitive run local git on remote fs.
+
+vim-refugi teaches fugitive to run not local git, but remote, and
+then pass output back.

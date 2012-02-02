@@ -22,3 +22,16 @@ Usage
 -----
 Just install it to your bundle directory.
 Everything should work like magic.
+
+
+Tips
+----
+
+Because of script use ssh multiplexing, it is good to configurate
+your ssh to automatically open master connections.
+
+E.g. you need this in your ~/.ssh/config:
+
+	host *
+		controlmaster auto
+		controlpath   ~/.ssh/connections/%r_%h_%p

@@ -1,9 +1,29 @@
 #!/bin/bash
 
-# TODO: documentation
+##
+## Git wrapper for vim-fugitive.
+##
+## Author: s.seletskiy@office.ngs.ru
+##
 
 tmp_dir=/tmp
 
+##
+## Return list of mounted sshfs.
+##
+## echo: list of mounted sshfs.
+##
+get_mounted_sshfs() {
+	cat /etc/mtab | grep sshfs
+}
+
+##
+## Returns mount string for specified directory.
+##
+## $1: directory to looking for.
+##
+## echo: mount string for specified directory.
+##
 get_mount() {
 	local dir=$1
 	local old_ifs=$IFS
@@ -11,7 +31,7 @@ get_mount() {
 	local mount_dir=''
 
 	IFS=$'\n'
-	for mount in `cat /etc/mtab | grep sshfs`; do
+	for mount in `get_mounted_sshfs`; do
 		mount_dir=`echo $mount | cut -d' ' -f2`
 
 		if [[ "$dir" == "$mount_dir"* ]]; then
@@ -24,6 +44,13 @@ get_mount() {
 	return 0
 }
 
+##
+## Opens new ssh tunnel.
+## Wrapper for ssh [-S ctl_socket] -fNM user@host
+##
+## $1: user@host
+## $2: ctl_socket, optional.
+##
 open_ssh_tunnel() {
 	local userhost=$1
 	local socket=$2
@@ -35,6 +62,16 @@ open_ssh_tunnel() {
 	fi
 }
 
+##
+## Reopen ssh tunnels.
+## Tries to reuse already opened ssh tunnels.
+## If user does not use ssh multiplexing, then opens
+## new ctl_soket in /tmp/ directory.
+##
+## $1: user@host from mtab file.
+##
+## echo: "-S ctl_socket" or "", if can reuse already opened connection.
+##
 reopen_ssh_tunnel() {
 	local mount_userhost=$1
 
@@ -58,36 +95,89 @@ reopen_ssh_tunnel() {
 	echo "$ssh_socket_flag"
 }
 
-cleanup_ssh_tunnels() {
+##
+## Close already opened ssh tunnels.
+## This function will close only sockets from /tmp/fugitive_.
+##
+close_ssh_tunnels() {
 	for socket in `find $tmp_dir -name 'refugi_*' 2>/dev/null`; do
 		echo -n $socket": "
 		ssh -O exit -S "$socket" "${socket##refugi_}"
 	done
 }
 
-local_git_dir=''
-cmd_line=()
-for arg in "$@"; do
-	case $arg in
-		--git-dir=*)
-			local_git_dir=`echo $arg | cut -b11-`
-			;;
-		--close-ssh-tunnels)
-			cleanup_ssh_tunnels
-			exit $?
-			;;
-		*)
-			cmd_line[${#cmd_line[*]}]="$arg"
-			continue
-			;;
-	esac
-done
+##
+## Return value for specified argument.
+##
+## $1: needle.
+## $2: arity, 0 for flags and 1 for keys.
+## $@: command line arguments to search in.
+##
+get_arg() {
+	local needle=$1
+	local arity=$2
+	local arg=''
+	local match_next=0
+
+	shift 2
+	for arg in "$@"; do
+		if [ $match_next -gt 0 ]; then
+			echo $arg
+			return 0
+		fi
+
+		case $arg in
+			$needle=*)
+				echo ${arg##$needle=}
+				return 0
+				;;
+			$needle)
+				if [ $arity -gt 0 ]; then
+					match_next=1
+				else
+					echo "$arg"
+					return 0
+				fi
+				;;
+		esac
+	done
+
+	return 1
+}
+
+##
+## Returns git command from command line.
+##
+## $@: command line to parse.
+##
+get_git_command_name() {
+	for arg in "$@"; do
+		case "$arg" in
+			-*)
+				continue
+				;;
+			*)
+				echo "$arg"
+				break
+				;;
+		esac
+	done
+}
+
+if [ `get_arg --close-ssh-tunnels 0 "@"` ]; then
+	close_ssh_tunnels
+	exit $?
+fi
+
+local_git_dir=`get_arg --git-dir 1 "$@"`
+git_command=`get_git_command_name "$@"`
 
 if [[ -z "$local_git_dir" ]]; then
 	echo --git-dir must be specified
 	exit 2
 fi
 
+## If no mount point found, fallback to local git.
 mount=`get_mount "$local_git_dir"`
 if [[ -z "$mount" ]]; then
 	git "$@"
@@ -104,11 +194,42 @@ else
 	local_working_dir=`pwd`
 	remote_working_dir=${local_working_dir##$mount_point}
 
-	# `ssh -fNM ...` for some reason hangs script execution
+	# `ssh -fNM ...` for some reason hangs script execution.
 	tmp_file=`mktemp`
 	reopen_ssh_tunnel "$mount_userhost" > $tmp_file
 	ssh_socket_flag=`cat $tmp_file`
 	rm $tmp_file
 
-	ssh $ssh_socket_flag $mount_userhost cd "$remote_working_dir" \; git --git-dir="$remote_git_dir" "${cmd_line[@]}"
+	## Preparing command line for git.
+	## We need to replace all local paths to remote in
+	## order to use correct path on remote system.
+	cmd_line=()
+	skip_arg=0
+	for arg in "$@"; do
+		if [ $skip_arg -gt 0 ]; then
+			skip_arg=$((skip_arg-1))
+			continue
+		fi
+		case $arg in
+			--git-dir=*)
+				cmd_line[${#cmd_line[*]}]="--git-dir=$remote_git_dir"
+				;;
+			-F)
+				if [ "$git_command" = "commit" ]; then
+					local_commit_file=`get_arg -F 1 "$@"`
+					cmd_line[${#cmd_line[*]}]="-F "${local_commit_file##$mount_point}
+					skip_arg=1
+				fi
+				;;
+			*)
+				cmd_line[${#cmd_line[*]}]="$arg"
+				;;
+		esac
+	done
+
+	if [ -z "$GIT_EDITOR" ]; then
+		GIT_EDITOR="$EDITOR"
+	fi
+
+	ssh $ssh_socket_flag $mount_userhost cd "$remote_working_dir" \; GIT_EDITOR=$GIT_EDITOR git "${cmd_line[@]}"
 fi

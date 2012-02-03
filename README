@@ -26,7 +26,7 @@ Everything should work like magic.
 
 Tips
 ----
-Because of script use ssh multiplexing, it is good to configurate
+Because of script use ssh multiplexing, it is good to configure
 your ssh to automatically open master connections.
 
 E.g. you need this in your ~/.ssh/config:

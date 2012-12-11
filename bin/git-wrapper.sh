@@ -231,5 +231,10 @@ else
 		GIT_EDITOR="$EDITOR"
 	fi
 
-	ssh -t $ssh_socket_flag $mount_userhost cd "$remote_working_dir" \; GIT_EDITOR=$GIT_EDITOR TERM=xterm-256color git "${cmd_line[@]}"
+    tty_flag=""
+    if [ "$GIT_EDITOR" == "false" -a $cmd_line == "commit" ]; then
+        tty_flag="-t"
+    fi
+
+	ssh $tty_flag $ssh_socket_flag $mount_userhost cd "$remote_working_dir" \; GIT_EDITOR=$GIT_EDITOR git "${cmd_line[@]}"
 fi

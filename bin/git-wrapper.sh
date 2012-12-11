@@ -231,5 +231,5 @@ else
 		GIT_EDITOR="$EDITOR"
 	fi
 
-	ssh $ssh_socket_flag $mount_userhost cd "$remote_working_dir" \; GIT_EDITOR=$GIT_EDITOR git "${cmd_line[@]}"
+	ssh -t $ssh_socket_flag $mount_userhost cd "$remote_working_dir" \; GIT_EDITOR=$GIT_EDITOR TERM=xterm-256color git "${cmd_line[@]}"
 fi

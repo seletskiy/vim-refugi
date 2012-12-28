@@ -192,7 +192,7 @@ else
 	fi
 
 	local_working_dir=`pwd`
-	remote_working_dir=${local_working_dir##$mount_point}
+	remote_working_dir=${mount_root%/}/${local_working_dir##$mount_point}
 
 	# `ssh -fNM ...` for some reason hangs script execution.
 	tmp_file=`mktemp`

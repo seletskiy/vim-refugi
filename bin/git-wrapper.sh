@@ -231,8 +231,14 @@ else
 		GIT_EDITOR="$EDITOR"
 	fi
 
+    ## TTY allocation hack for some interactive git commands
     tty_flag=""
+
     if [ "$GIT_EDITOR" == "false" -a $cmd_line == "commit" ]; then
+        tty_flag="-t"
+    fi
+
+    if [[ "${cmd_line[@]}" == *\ add\ --patch* ]]; then
         tty_flag="-t"
     fi
 

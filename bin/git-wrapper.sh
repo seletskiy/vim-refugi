@@ -188,7 +188,7 @@ else
 	mount_userhost=${mount_dsn%%:*}
 	remote_git_dir=${local_git_dir##$mount_point}
 	if [[ "$mount_root" != "/" ]]; then
-		remote_git_dir=$mount_root/$remote_git_dir
+		remote_git_dir=${mount_root%/}/$remote_git_dir
 	fi
 
 	local_working_dir=`pwd`
@@ -217,7 +217,7 @@ else
 			-F)
 				if [ "$git_command" = "commit" ]; then
 					local_commit_file=`get_arg -F 1 "$@"`
-					cmd_line[${#cmd_line[*]}]="-F "${local_commit_file##$mount_point}
+					cmd_line[${#cmd_line[*]}]="-F "${mount_root%/}/${local_commit_file##$mount_point}
 					skip_arg=1
 				fi
 				;;

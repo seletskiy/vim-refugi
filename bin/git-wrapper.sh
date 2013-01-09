@@ -212,19 +212,20 @@ else
 		fi
 		case $arg in
 			--git-dir=*)
-				cmd_line[${#cmd_line[*]}]="--git-dir=$remote_git_dir"
+				new_arg="--git-dir=$remote_git_dir"
 				;;
 			-F)
 				if [ "$git_command" = "commit" ]; then
 					local_commit_file=`get_arg -F 1 "$@"`
-					cmd_line[${#cmd_line[*]}]="-F "${mount_root%/}/${local_commit_file##$mount_point}
+					new_arg="-F "${mount_root%/}/${local_commit_file##$mount_point}
 					skip_arg=1
 				fi
 				;;
 			*)
-				cmd_line[${#cmd_line[*]}]="$arg"
+                new_arg="$arg"
 				;;
 		esac
+        cmd_line[${#cmd_line[*]}]=\"${new_arg//\"/\\\"}\"
 	done
 
 	if [ -z "$GIT_EDITOR" ]; then

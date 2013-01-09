@@ -217,7 +217,7 @@ else
 			-F)
 				if [ "$git_command" = "commit" ]; then
 					local_commit_file=`get_arg -F 1 "$@"`
-					new_arg="-F "${mount_root%/}/${local_commit_file##$mount_point}
+					new_arg="-F"${mount_root%/}/${local_commit_file##$mount_point}
 					skip_arg=1
 				fi
 				;;

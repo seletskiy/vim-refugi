@@ -1,5 +1,7 @@
 #!/bin/bash
 
+### vim: set noet ai sw=4 ts=4:
+
 ##
 ## Git wrapper for vim-fugitive.
 ##
@@ -222,26 +224,26 @@ else
 				fi
 				;;
 			*)
-                new_arg="$arg"
+				new_arg="$arg"
 				;;
 		esac
-        cmd_line[${#cmd_line[*]}]=\"${new_arg//\"/\\\"}\"
+		cmd_line[${#cmd_line[*]}]=\"${new_arg//\"/\\\"}\"
 	done
 
 	if [ -z "$GIT_EDITOR" ]; then
 		GIT_EDITOR="$EDITOR"
 	fi
 
-    ## TTY allocation hack for some interactive git commands
-    tty_flag=""
+	## TTY allocation hack for some interactive git commands
+	tty_flag=""
 
-    if [ "$GIT_EDITOR" == "false" -a $cmd_line == "commit" ]; then
-        tty_flag="-t"
-    fi
+	if [ "$GIT_EDITOR" == "false" -a $cmd_line == "commit" ]; then
+		tty_flag="-t"
+	fi
 
-    if [[ "${cmd_line[@]}" == *\ add\ --patch* ]]; then
-        tty_flag="-t"
-    fi
+	if [[ "${cmd_line[@]}" == *\ add\ --patch* ]]; then
+		tty_flag="-t"
+	fi
 
 	ssh $tty_flag $ssh_socket_flag $mount_userhost cd "$remote_working_dir" \; GIT_EDITOR=$GIT_EDITOR git "${cmd_line[@]}"
 fi

@@ -241,7 +241,11 @@ else
 		tty_flag="-t"
 	fi
 
-	if [[ "${cmd_line[@]}" == *\ add\ --patch* ]]; then
+	if [[ "${cmd_line[@]}" == *\ \"add\"\ \"--patch\"* ]]; then
+		tty_flag="-t"
+	fi
+
+	if [[ "${cmd_line[@]}" == *\ \"tag\"\ \"-a\"* ]]; then
 		tty_flag="-t"
 	fi
 
